@@ -1,0 +1,148 @@
+<html>
+	<head>
+		<title>Data Viz Projects</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
+		<link rel="stylesheet" type="text/css" href="https://d3fvh0lm0eshry.cloudfront.net/static/css/newamericadotorg.lite.css"
+	  />
+
+		<style>
+			a {
+				font-weight: 400;
+			}
+
+			#content {
+				padding-bottom: 120px;
+				padding-top: 60px;
+				max-width: 650px;
+			}
+
+			#heading {
+				text-align: center;
+				padding-bottom: 25px;
+				border-bottom: 1px solid #333;
+			}
+
+			.logo{
+		    background-image: url(https://d3fvh0lm0eshry.cloudfront.net/static/logo-black.svg);
+		    background-position: 0;
+		    background-repeat: no-repeat;
+		    background-size: 95% auto;
+		    display: inline-block;
+				width: 120px;
+				height: 40px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container" id="content">
+			<div id="heading">
+				<div class="logo"></div>
+				<h1>Data Viz Projects</h1>
+			</div>
+			<div id="list" class="margin-top-35"></div>
+		</div>
+		<script id="list-item-template" type="text/template">
+			<% data.forEach(function(d){ %>
+				<div class="margin-bottom-35">
+					<h5 class="margin-5"><%= d.program %></h5>
+					<h4 class="margin-5"><%= d.title %></h4>
+					<div>
+						<a href="<%=d.previewUrl %>">
+							preview
+						</a>&nbsp;|&nbsp;
+						<a href="<%= d.scriptUrl %>">
+							script
+						</a>
+						&nbsp;|&nbsp;
+						<a href="<%= d.githubUrl %>" target="_blank">
+							github
+						</a><br/>
+						<h6 style="font-size: 12px; color: #aaa" class="margin-5">
+							last modified: <%= d.lastModified %>
+						</h6>
+					</div>
+				</div>
+			<% }) %>
+		</div>
+	</script>
+		<script>
+
+		var http = createRequestObject();
+		http.open('get', 'https://s3.amazonaws.com/datadotnewamerica/');
+		http.onreadystatechange = handleList;
+		http.send(null);
+
+		function createRequestObject(){
+			var request_o; //declare the variable to hold the object.
+			var browser = navigator.appName; //find the browser name
+			if(browser == "Microsoft Internet Explorer"){
+				/* Create the object using MSIE's method */
+				request_o = new ActiveXObject("Microsoft.XMLHTTP");
+			}else{
+				/* Create the object using other browser's method */
+				request_o = new XMLHttpRequest();
+			}
+			return request_o; //return the object
+		}
+
+		function handleList(){
+			if(http.readyState == 4){
+				var template = _.template(document.getElementById('list-item-template').innerText);
+				var response = http.responseXML;
+				var list = document.getElementById('list');
+
+				var data = Array.from(response.getElementsByTagName('Contents')).map(function(content){
+					return parseContent(content);
+				}).filter(function(d){ return d !== false });
+
+				data = _.sortBy(data, '-lastModified');
+			 	list.innerHTML = template({ data: data });
+			}
+		}
+
+		function parseContent(el){
+			var key = el.getElementsByTagName('Key')[0].textContent;
+			if(!isIndexFile(key)) return false;
+
+			var dir = key.split('/')[0];
+			if(dir === '.' || dir == 'varying-degrees-2018' || dir == 'fp_applicant_profile' || dir == 'index.html') return false;
+			var d = parseListItem(dir);
+			d.lastModified = dateString(new Date(el.getElementsByTagName('LastModified')[0].textContent));
+
+			return d;
+		}
+
+		function isIndexFile(type){
+			if(type.indexOf('index.html') !== -1){
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		function parseListItem(text){
+			var splitText = text.split('_');
+			var program = splitText.splice(0,1);
+			var title = splitText.map(function(t){
+				return t.charAt(0).toUpperCase() + t.substr(1)
+			}).join(' ').replace('/', '');
+
+			return {
+				dir: text,
+				program: program[0],
+				title: title,
+				previewUrl: '/' + text + '/',
+				scriptUrl: '/' + text + '/dist/bundle.js.gz',
+				githubUrl: 'https://github.com/newamerica-graphics/' + text
+			}
+		}
+
+		function dateString(d){
+			return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2)
+     + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+		}
+
+
+		</script>
+	</body>
+</html>
