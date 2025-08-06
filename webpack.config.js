@@ -37,11 +37,7 @@ module.exports = env => {
           use: {
             loader: "babel-loader",
             options: {
-              presets: ["@babel/env", "@babel/preset-react"],
-              plugins: [
-                "@babel/plugin-proposal-class-properties",
-                "@babel/plugin-proposal-object-rest-spread"
-              ]
+              presets: ["@babel/env", "@babel/preset-react"]
             }
           }
         },
@@ -55,7 +51,7 @@ module.exports = env => {
               options: {
                 postcssOptions: {
                   plugins: [
-                    "autoprefixer",
+                    require('autoprefixer'),
                     require('cssnano')({
                       preset: 'default'
                     })
@@ -63,7 +59,12 @@ module.exports = env => {
                 }
               }
             },
-            "sass-loader"
+            {
+              loader: "sass-loader",
+              options: {
+                api: "modern"
+              }
+            }
           ]
         }
       ]
